@@ -1,41 +1,45 @@
-var builder = WebApplication.CreateBuilder(args);
+using ProductCatalog.Api.Infrastructure;
+using Serilog;
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+try
 {
-    app.MapOpenApi();
-}
+    var builder = WebApplication.CreateBuilder(args);
 
-app.UseHttpsRedirection();
+    builder.Services.AddSerilog((services, loggerConfiguration) => loggerConfiguration
+        .ReadFrom.Configuration(builder.Configuration)
+        .ReadFrom.Services(services));
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    builder.Services.AddProblemDetails(options =>
+        options.CustomizeProblemDetails = context => 
+            context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier);
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-app.MapGet("/weatherforecast", () =>
+    builder.Services.AddControllers();
+    builder.Services.AddOpenApi();
+
+    var app = builder.Build();
+
+    app.UseSerilogRequestLogging();
+    app.UseExceptionHandler();
+
+    if (app.Environment.IsDevelopment())
     {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast");
+        app.MapOpenApi();
+    }
 
-app.Run();
+    app.MapControllers();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+    app.Run();
+}
+catch (Exception ex) when (ex is not HostAbortedException)
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    Log.Fatal(ex, "Host terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
 }
