@@ -35,6 +35,14 @@ dotnet run --project src/ProductCatalog.Api --launch-profile http
 
 Swagger: http://localhost:5183/swagger. Without Redis configured, an in-memory cache is used.
 
+## Tests
+
+```bash
+dotnet test --solution ProductCatalog.sln
+```
+
+Unit tests (xUnit + NSubstitute) cover the domain rules, search validation and the main command handlers.
+
 ## Endpoints
 
 | Method | Route | Auth | Description |

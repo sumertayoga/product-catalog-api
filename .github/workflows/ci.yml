@@ -21,7 +21,7 @@ jobs:
 
       - run: dotnet restore ProductCatalog.sln
       - run: dotnet build ProductCatalog.sln -c Release --no-restore
-      - run: dotnet test ProductCatalog.sln -c Release --no-build
+      - run: dotnet test --solution ProductCatalog.sln -c Release --no-build
 
       - name: Check for vulnerable packages
         run: |
