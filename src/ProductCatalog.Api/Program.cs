@@ -1,4 +1,6 @@
 using ProductCatalog.Api.Infrastructure;
+using ProductCatalog.Application;
+using ProductCatalog.Infrastructure;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -18,10 +20,16 @@ try
             context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier);
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+    builder.Services
+        .AddApplication()
+        .AddInfrastructure(builder.Configuration);
+
     builder.Services.AddControllers();
     builder.Services.AddOpenApi();
 
     var app = builder.Build();
+
+    await app.Services.MigrateDatabaseAsync();
 
     app.UseSerilogRequestLogging();
     app.UseExceptionHandler();
@@ -33,7 +41,7 @@ try
 
     app.MapControllers();
 
-    app.Run();
+    await app.RunAsync();
 }
 catch (Exception ex) when (ex is not HostAbortedException)
 {
