@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProductCatalog.Application.Common.Cqrs;
 using ProductCatalog.Application.Common.Models;
@@ -8,6 +9,7 @@ using ProductCatalog.Application.Products.Queries;
 namespace ProductCatalog.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/products")]
 public sealed class ProductsController : ControllerBase
 {

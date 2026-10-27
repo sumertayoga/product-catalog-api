@@ -1,3 +1,4 @@
+using ProductCatalog.Api.Extensions;
 using ProductCatalog.Api.Infrastructure;
 using ProductCatalog.Application;
 using ProductCatalog.Infrastructure;
@@ -22,10 +23,18 @@ try
 
     builder.Services
         .AddApplication()
-        .AddInfrastructure(builder.Configuration);
+        .AddInfrastructure(builder.Configuration)
+        .AddJwtBearerAuth();
 
     builder.Services.AddControllers();
-    builder.Services.AddOpenApi();
+    builder.Services.AddOpenApiWithBearer();
+
+    const string frontendCorsPolicy = "Frontend";
+    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+    builder.Services.AddCors(options => options.AddPolicy(frontendCorsPolicy, policy => policy
+        .WithOrigins(allowedOrigins)
+        .AllowAnyHeader()
+        .AllowAnyMethod()));
 
     var app = builder.Build();
 
@@ -34,11 +43,13 @@ try
     app.UseSerilogRequestLogging();
     app.UseExceptionHandler();
 
-    if (app.Environment.IsDevelopment())
-    {
-        app.MapOpenApi();
-    }
+    app.MapApiDocs();
 
+    app.UseCors(frontendCorsPolicy);
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapHealthChecks("/health").AllowAnonymous();
     app.MapControllers();
 
     await app.RunAsync();

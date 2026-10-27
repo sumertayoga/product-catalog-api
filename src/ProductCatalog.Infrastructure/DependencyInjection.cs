@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ProductCatalog.Application.Auth;
 using ProductCatalog.Application.Common.Abstractions;
 using ProductCatalog.Application.Products;
+using ProductCatalog.Infrastructure.Auth;
 using ProductCatalog.Infrastructure.Persistence;
 using ProductCatalog.Infrastructure.Persistence.Repositories;
 
@@ -21,6 +23,14 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+
+        services.AddOptions<JwtOptions>()
+            .BindConfiguration(JwtOptions.Section)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<AppDbContext>();
