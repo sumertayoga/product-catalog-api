@@ -6,7 +6,8 @@ namespace ProductCatalog.Application.Products.Queries;
 public sealed record SearchProductsQuery(ProductSearchRequest Request);
 
 internal sealed class SearchProductsQueryHandler(
-    IProductRepository repository) : IQueryHandler<SearchProductsQuery, PagedResult<ProductResponse>>
+    IProductRepository repository,
+    ProductCache cache) : IQueryHandler<SearchProductsQuery, PagedResult<ProductResponse>>
 {
     public async Task<PagedResult<ProductResponse>> HandleAsync(
         SearchProductsQuery query,
@@ -20,12 +21,19 @@ internal sealed class SearchProductsQueryHandler(
             request.Page,
             request.PageSize);
 
+        var cached = await cache.GetSearchAsync(criteria, cancellationToken);
+        if (cached is not null)
+            return cached;
+
         var (items, totalCount) = await repository.SearchAsync(criteria, cancellationToken);
 
-        return new PagedResult<ProductResponse>(
+        var result = new PagedResult<ProductResponse>(
             items.Select(p => p.ToResponse()).ToList(),
             request.Page,
             request.PageSize,
             totalCount);
+
+        await cache.SetSearchAsync(criteria, result, cancellationToken);
+        return result;
     }
 }

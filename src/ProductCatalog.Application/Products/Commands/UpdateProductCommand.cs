@@ -10,7 +10,8 @@ public sealed record UpdateProductCommand(
 
 internal sealed class UpdateProductCommandHandler(
     IProductRepository repository,
-    IUnitOfWork unitOfWork) : ICommandHandler<UpdateProductCommand>
+    IUnitOfWork unitOfWork,
+    ProductCache cache) : ICommandHandler<UpdateProductCommand>
 {
     public async Task HandleAsync(
         UpdateProductCommand command,
@@ -26,5 +27,6 @@ internal sealed class UpdateProductCommandHandler(
             request.Price);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync(command.Id, cancellationToken);
     }
 }

@@ -5,6 +5,7 @@ using ProductCatalog.Application.Auth;
 using ProductCatalog.Application.Common.Abstractions;
 using ProductCatalog.Application.Products;
 using ProductCatalog.Infrastructure.Auth;
+using ProductCatalog.Infrastructure.Caching;
 using ProductCatalog.Infrastructure.Persistence;
 using ProductCatalog.Infrastructure.Persistence.Repositories;
 
@@ -31,6 +32,17 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
+
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        if (string.IsNullOrWhiteSpace(redisConnectionString))
+            services.AddDistributedMemoryCache();
+        else
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisConnectionString;
+                options.InstanceName = "productcatalog:";
+            });
+        services.AddSingleton<ICacheService, CacheService>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<AppDbContext>();

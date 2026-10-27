@@ -8,7 +8,8 @@ public sealed record DeleteProductCommand(int Id);
 
 internal sealed class DeleteProductCommandHandler(
     IProductRepository repository,
-    IUnitOfWork unitOfWork) : ICommandHandler<DeleteProductCommand>
+    IUnitOfWork unitOfWork,
+    ProductCache cache) : ICommandHandler<DeleteProductCommand>
 {
     public async Task HandleAsync(
         DeleteProductCommand command,
@@ -19,5 +20,6 @@ internal sealed class DeleteProductCommandHandler(
 
         repository.Remove(product);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync(command.Id, cancellationToken);
     }
 }

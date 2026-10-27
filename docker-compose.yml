@@ -14,6 +14,15 @@ services:
       timeout: 5s
       retries: 10
 
+  cache:
+    image: valkey/valkey:9.1-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: .
@@ -22,10 +31,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      cache:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
       ConnectionStrings__Default: Host=db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable
+      ConnectionStrings__Redis: cache:6379,abortConnect=false,connectTimeout=2000
       Jwt__Key: ${JWT_KEY:?set in .env}
       Cors__AllowedOrigins__0: ${FRONTEND_ORIGIN:-http://localhost:5173}
       ApiDocs__Enabled: "true"

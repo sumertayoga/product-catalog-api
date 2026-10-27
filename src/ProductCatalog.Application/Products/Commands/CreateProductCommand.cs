@@ -9,6 +9,7 @@ public sealed record CreateProductCommand(ProductRequest Request);
 internal sealed class CreateProductCommandHandler(
     IProductRepository repository,
     IUnitOfWork unitOfWork,
+    ProductCache cache,
     TimeProvider timeProvider) : ICommandHandler<CreateProductCommand, ProductResponse>
 {
     public async Task<ProductResponse> HandleAsync(
@@ -24,6 +25,7 @@ internal sealed class CreateProductCommandHandler(
 
         repository.Add(product);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await cache.InvalidateAsync(null, cancellationToken);
 
         return product.ToResponse();
     }
